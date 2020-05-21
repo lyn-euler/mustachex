@@ -35,8 +35,12 @@ void main() {
     test('in a nutshell example', () {
       var template = '{{greeting_pascalCase}} {{what_pc}}!';
       var vars = {'greeting': 'HELLO'};
-      fulfillmentFunction(MissingVariableException variable) {
-        if (variable.varName == 'what') return 'WORLD';
+      String fulfillmentFunction(MissingVariableException variable) {
+        if (variable.varName == 'what') {
+          return 'WORLD';
+        } else {
+          return 'UNIVERSE';
+        }
       }
 
       var rendered = processMustachex(template, vars,

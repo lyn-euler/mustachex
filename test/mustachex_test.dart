@@ -36,7 +36,7 @@ void main() {
       var template = '{{greeting_pascalCase}} {{what_pc}}!';
       var vars = {'greeting': 'HELLO'};
       fulfillmentFunction(MissingVariableException variable) {
-        if (varName == 'what') return 'WORLD';
+        if (variable.varName == 'what') return 'WORLD';
       }
 
       var rendered = processMustachex(template, vars,

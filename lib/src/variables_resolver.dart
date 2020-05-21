@@ -90,44 +90,8 @@ class VariablesResolver {
     }
     return ret;
   }
-  // get(String varName) => _mem[varName] ?? null;
-  // get(String varName) => _mem.containsKey(varName) ? _mem[varName] : null;
 
   Map get getAll => Map.unmodifiable(_mem);
-
-  // /// Returns a Future that will be completed with the demanding `varName`'s
-  // /// value as soon as that's available
-  // Future demand(String varName,
-  //     {Type type = dynamic, String message, Function constraintsChecker}) {
-  //   throw UnimplementedError(
-  //       'Not implemented after hierarchical requesting reformat');
-  //   // Completer completer = Completer();
-  //   // Future(() {
-  //   //   if (_mem[varName] == null) {
-  //   //     DemandingVariable demandingVariable =
-  //   //         DemandingVariable(varName, type: type);
-  //   //     if (message == null) {
-  //   //       demandingVariable.message =
-  //   //           "please provide the variable value for '$varName'";
-  //   //     } else {
-  //   //       demandingVariable.message = message;
-  //   //     }
-  //   //     if (constraintsChecker != null)
-  //   //       demandingVariable.constraintsChecker = constraintsChecker;
-  //   //     demandingVariable.type = type;
-  //   //     var ret = missingResolver(demandingVariable);
-  //   //     if (ret is Future)
-  //   //       ret.then((resolvedValue) {
-  //   //         completer.complete(resolvedValue);
-  //   //       });
-  //   //     else
-  //   //       completer.complete(ret);
-  //   //   } else {
-  //   //     completer.complete(_mem[varName]);
-  //   //   }
-  //   // });
-  //   // return completer.future;
-  // }
 
   //La idea es que cuando te manden una lista de keys, se agregue en
   //el lugar que corresponde el value. Está hecho para que cuando se
@@ -286,21 +250,6 @@ class StringVariable {
       throw UnsupportedError("'$key' is not supported");
     }
   }
-
-  // String operator [](key) => _mirror(key);
-  // String _mirror(key) {
-  //   InstanceMirror mirror = reflect(_reCasedOriginal);
-  //   Symbol symbol = Symbol(key);
-  //   try {
-  //     InstanceMirror invokedResult = mirror.getField(symbol);
-  //     return invokedResult.reflectee;
-  //   } on NoSuchMethodError catch (e) {
-  //     throw UnsupportedError(
-  //         "Tried to recase this StringVariable($this) to '$key' [Error: $e]");
-  //   } catch (_) {
-  //     rethrow;
-  //   }
-  // }
 
   @override
   bool operator ==(other) => other.hashCode == _original.hashCode;

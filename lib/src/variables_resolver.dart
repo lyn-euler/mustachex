@@ -258,7 +258,35 @@ class StringVariable {
   String get snakeCase => _reCasedOriginal.snakeCase;
   String get titleCase => _reCasedOriginal.titleCase;
 
-  // /// Used to recase via `VariableResolver["varName"]["xxxCase"]`
+  /// Used to recase via `VariableResolver["varName"]["xxxCase"]`
+  String operator [](key) {
+    if (key == 'camelCase') {
+      return camelCase;
+    } else if (key == 'camelCase') {
+      return camelCase;
+    } else if (key == 'constantCase') {
+      return constantCase;
+    } else if (key == 'dotCase') {
+      return dotCase;
+    } else if (key == 'headerCase') {
+      return headerCase;
+    } else if (key == 'paramCase') {
+      return paramCase;
+    } else if (key == 'pascalCase') {
+      return pascalCase;
+    } else if (key == 'pathCase') {
+      return pathCase;
+    } else if (key == 'sentenceCase') {
+      return sentenceCase;
+    } else if (key == 'snakeCase') {
+      return snakeCase;
+    } else if (key == 'titleCase') {
+      return titleCase;
+    } else {
+      throw UnsupportedError("'$key' is not supported");
+    }
+  }
+
   // String operator [](key) => _mirror(key);
   // String _mirror(key) {
   //   InstanceMirror mirror = reflect(_reCasedOriginal);

@@ -2,6 +2,141 @@ import 'package:mustache/mustache.dart';
 import 'package:mustache_recase/mustache_recase.dart' as mustache_recase;
 import 'package:mustachex/src/variable_recase_decomposer.dart';
 
+_tryExecution({bool answer, String relativePathResolved}) {
+  var ending;
+  try {
+    if (answer == null && null == relativePathResolved)
+      ending = executionLogic();
+    else
+      ending = this.executionLogic(
+          askIfOverridingAnswer: answer,
+          relativePathResolved: relativePathResolved);
+    // } on UnresolvedUriException catch (e) {
+    //   Isolate.resolvePackageUri(e.uri).then((Uri uri) {
+    //     _execute(relativePathResolved: uri.path);
+    //   });
+    //   return null;
+  } on MightAskIfOverridingException catch (e) {
+    logger.finer("There is an overriding situation where the policy is to ask."
+        " Asking...");
+    runner.askForConfirmation(e.message).then((bool answer) {
+      _tryExecution(answer: answer);
+    });
+    return null;
+    // } on MissingPartialException catch (e) {
+    //   logger.finer(
+    //       "Needing to resolve ${e.partialName} (already tried in generator_plus package: ${e.original_package_searched})");
+    //   if (e.original_package_searched) rethrow;
+    //   resolvePath("package:generator_plus/src").then((String path) {
+    //     original_package_path =
+    //         path.substring(0, path.length - 7); //from src/common.dart
+    //     logger.fine("mustache_partials dir resolved to $original_package_path");
+    //     _tryExecution();
+    //   });
+    //   return null;
+  } on MissingSectionTagException catch (e, st) {
+    logger.finer(
+        "There is a missing value for '${e.humanReadableVariable}' mustache "
+        "section tag. Trying to solve this...");
+    //Primero nos fijamos si es una guarda tipo hasXxxYyyyyyZzzz
+    String variable = e.request;
+    if (variable.startsWith("has")) {
+      String recasedName = ReCase(variable.substring(3)).camelCase;
+      List<_MustacheIteration> iterations =
+          _getMustacheIterations(e, recasedName);
+      if (iterations.isNotEmpty) {
+        var mapToReplace = iterations.first.variablesResolverPosition.first;
+        var assign = _recursivelyProcessed(iterations, variable, recasedName);
+        variablesResolver[mapToReplace] = assign;
+        logger.finest("Problem solved by setting all intances of "
+            "the last submap with a '$variable' field saying wether "
+            "the field '$recasedName' is set or not.");
+      } else {
+        var request = e.parentCollections;
+        var storeLocation = List.from(request);
+        request.add(recasedName);
+        storeLocation.add(variable);
+        var storedVar = variablesResolver.get(request);
+        variablesResolver[storeLocation] = _processStoreValue(storedVar);
+        logger.finest("Problem solved by defining "
+            "'$variable' to ${variablesResolver[storeLocation]}");
+      }
+      _tryExecution();
+      return null;
+    } else {
+      //No es del tipo hasXxxYyy. Le falta la lista directamente
+      _completer.completeError(e, st);
+      return null;
+    }
+  } on MissingVariableException catch (e) {
+    logger.finer(
+        "There is a missing value for '${e.humanReadableVariable}' mustache "
+        "variable. Trying to solve this...");
+    //Primero nos fijamos si falta el valor o sólo hay que recasearlo
+    dynamic recasingAttempt =
+        variablesResolver.get(e.parentCollectionsWithVarName);
+    if (recasingAttempt != null) {
+      variablesResolver[e.parentCollectionsWithRequest] =
+          variablesResolver.get(e.parentCollectionsWithRequest);
+      logger.finest("Problem solved by recasing it to '$recasingAttempt'");
+      _tryExecution();
+      return null;
+    } else {
+      /* TODO(baja prioridad): Meter el handleVar acá en vez de esa mierda.
+              La macana es que está definido en GeneratorImpl y de acá no llegamos a eso.
+              Sumale que hay que manejarlo como la variable definida localmente en el generador
+              específico */
+      runner
+          .askForInput(
+              "Please provide the value for the missing variable '${e.varName}'")
+          .then((String value) {
+        variablesResolver[e.parentCollectionsWithVarName] = value;
+        logger.finest("Problem solved by asking user ('$value' answered)");
+        _tryExecution();
+      });
+      return null;
+    }
+  } catch (e, st) {
+    // debugger();
+    _completer.completeError(e, st);
+    return null;
+  }
+  _completer.complete((ending is Future) ? ending : Future.value(ending));
+}
+
+List<_MustacheIteration> _getMustacheIterations(
+    MissingSectionTagException e, String recasedName) {
+  List<_MustacheIteration> iterations = [];
+  List<String> request = [];
+  var elements = List.from(e.parentCollections);
+  // elements.add(recasedName);
+  var resolvedVar;
+  for (String collection in elements) {
+    request.add(collection);
+    try {
+      resolvedVar = variablesResolver[request];
+    } on ArgumentError {
+      try {
+        resolvedVar = iterations.last.iteration
+            .firstWhere((elem) => elem.containsKey(collection))[collection];
+      } catch (e) {
+        break;
+      }
+    }
+    if (resolvedVar is List) {
+      if (resolvedVar.isEmpty) {
+        break;
+      } else if (resolvedVar.every((e) => e is Map)) {
+        iterations.add(
+            _MustacheIteration(resolvedVar.cast<Map>(), List.from(request)));
+      } else {
+        _throwImpossibleState();
+      }
+    }
+  }
+  return iterations;
+}
+
 class MissingPartialException implements Exception {
   final String partialName;
   MissingPartialException(this.partialName);
@@ -57,7 +192,7 @@ class MissingVariableException extends MustacheMissingException {
             e.message.substring(36, e.message.length - 1), e, sourceVariables);
 }
 
-/// Indicates that the `request` value wasn't provided
+/// Indicates that the `request` value wasn't providedvariables
 /// Note that `request` is automatically decomposed from `varName`(_`recasing`)?
 class MissingSectionTagException extends MustacheMissingException {
   @override

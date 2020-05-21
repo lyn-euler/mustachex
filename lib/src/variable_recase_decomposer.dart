@@ -17,7 +17,12 @@ class VariableRecaseDecomposer {
     }
   }
 
+  /// The complete requested variable string, like varName_constantCase
   String get request => _request;
+
+  /// The variable part of the request, like varName
   String get varName => _varName;
+
+  /// The eventual recasing part of the request, like camelCase
   String get recasing => _recasing;
 }

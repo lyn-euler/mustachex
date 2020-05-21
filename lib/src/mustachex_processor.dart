@@ -102,8 +102,13 @@ class MustacheMissingException {
     // this._parentCollections = _processParentMaps(_d.varName, sourceVariables) ?? [];
   }
 
+  /// The complete requested variable string, like varName_constantCase
   String get request => _d.request;
+
+  /// The variable part of the request, like varName
   String get varName => _d.varName;
+
+  /// The eventual recasing part of the request, like camelCase
   String get recasing => _d.recasing;
 
   /// The maps that contains the missing value. For example, \[a,b\] means that

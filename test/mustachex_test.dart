@@ -14,7 +14,7 @@ void main() {
           ]
         },
         {
-          'name': 'claseDos',
+          'name': 'clase_dos',
           'fields': [
             {'name': 'field1', 'type': 'int'},
           ],
@@ -32,11 +32,6 @@ void main() {
       ]
     };
     var vars = VariablesResolver(classesJSON);
-
-    setUp(() {
-      awesome = Awesome();
-    });
-
     test('First Test', () {
       expect(awesome.isAwesome, isTrue);
     });

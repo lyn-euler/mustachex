@@ -1,6 +1,6 @@
 import 'package:mustache/mustache.dart';
 import 'package:mustache_recase/mustache_recase.dart' as mustache_recase;
-import 'package:mustachex/src/variables_resolver.dart';
+import 'package:mustachex/src/variable_recase_decomposer.dart';
 
 class MissingPartialException implements Exception {
   final String partialName;

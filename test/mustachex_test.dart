@@ -35,7 +35,7 @@ void main() {
     test('in a nutshell example', () {
       var template = '{{greeting_pascalCase}} {{what_pc}}!';
       var vars = {'greeting': 'HELLO'};
-      fulfillmentFunction(String varName) {
+      fulfillmentFunction(MissingVariableException variable) {
         if (varName == 'what') return 'WORLD';
       }
 

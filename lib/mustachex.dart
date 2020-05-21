@@ -3,6 +3,9 @@ library mustachex;
 
 import 'src/mustachex_processor.dart';
 
-String processMustachex(String source, Map variables) {
+typedef FulfillmentFunction = String Function(String varName);
+
+String processMustachex(String source, Map variables,
+    {FulfillmentFunction missingVarFulfiller}) {
   //TODO: meter la logica
 }

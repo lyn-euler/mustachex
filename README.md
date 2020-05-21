@@ -3,7 +3,7 @@
 The features of mustache with the addition of:
 
 - recasing variables
-- ...
+- missing variables fulfillment
 
 ## Usage
 
@@ -14,8 +14,11 @@ import 'package:mustachex/mustachex.dart';
 
 main() {
   var template = '{{greeting_pascalCase}} {{what_pc}}!';
-  var vars = {'greeting':'HELLO', 'what':'WORLD'});
-  var rendered = processMustachex(template,vars);
+  var vars = {'greeting':'HELLO'};
+  fulfillmentFunction(String varName){
+    if(varName == 'what') return 'WORLD';
+  }
+  var rendered = processMustachex(template,vars, missingVarFulfiller: fulfillmentFunction);
   assert(rendered == 'Hello World!');
 }
 ```

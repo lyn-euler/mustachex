@@ -32,8 +32,16 @@ void main() {
       ]
     };
     var vars = VariablesResolver(classesJSON);
-    test('First Test', () {
-      expect(awesome.isAwesome, isTrue);
+    test('in a nutshell example', () {
+      var template = '{{greeting_pascalCase}} {{what_pc}}!';
+      var vars = {'greeting': 'HELLO'};
+      fulfillmentFunction(String varName) {
+        if (varName == 'what') return 'WORLD';
+      }
+
+      var rendered = processMustachex(template, vars,
+          missingVarFulfiller: fulfillmentFunction);
+      expect(rendered, equals('Hello World!'));
     });
   });
 }

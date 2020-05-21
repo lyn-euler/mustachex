@@ -1,6 +1,8 @@
 /// MUSTACHE EXtended library
 library mustachex;
 
+import 'package:mustachex/src/variables_resolver.dart';
+
 import 'src/mustachex_processor.dart';
 export 'src/mustachex_processor.dart'
     show MissingVariableException, MissingPartialException;
@@ -13,6 +15,7 @@ typedef PartialResolverFunction = String Function(
 
 String processMustachex(String source, Map variables,
     {FulfillmentFunction missingVarFulfiller,
-    PartialResolverFunction partialsResolver}) {
+    PartialResolverFunction partialsResolver,
+    VariablesResolver variablesResolver}) {
   //TODO: meter la logica
 }

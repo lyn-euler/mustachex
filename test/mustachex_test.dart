@@ -32,7 +32,7 @@ void main() {
       ]
     };
     var vars = VariablesResolver(classesJSON);
-    test('in a nutshell example', () {
+    test('in a nutshell example', () async {
       var template = '{{greeting_pascalCase}} {{what_pc}}!';
       var vars = {'greeting': 'HELLO'};
       String fulfillmentFunction(MissingVariableException variable) {
@@ -43,9 +43,9 @@ void main() {
         }
       }
 
-      var rendered = processMustachex(template, vars,
-          missingVarFulfiller: fulfillmentFunction);
-      expect(rendered, equals('Hello World!'));
+      var processor = MustachexProcessor(
+          initialVariables: vars, missingVarFulfiller: fulfillmentFunction);
+      expect(await processor.process(template), equals('Hello World!'));
     });
   });
 }

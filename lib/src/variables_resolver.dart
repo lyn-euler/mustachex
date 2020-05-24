@@ -3,7 +3,7 @@ import 'package:recase/recase.dart';
 
 /// Will hold a bunch of variables and provide tools for obtaining them
 class VariablesResolver {
-  Map<String, dynamic> _mem;
+  Map<String, dynamic> _mem = {};
   // Function missingResolver;
 
   final Map<String, String> recasingsShorthands = const {
@@ -14,7 +14,7 @@ class VariablesResolver {
 
   VariablesResolver([Map initialVars]) {
     // VariablesResolver([Map initialVars, Function demandingMissingresolver]) {
-    _mem = initialVars ?? {};
+    if (initialVars != null) addAll(initialVars);
     // missingResolver = demandingMissingresolver;
   }
 
@@ -93,11 +93,11 @@ class VariablesResolver {
 
   Map get getAll => Map.unmodifiable(_mem);
 
-  //La idea es que cuando te manden una lista de keys, se agregue en
-  //el lugar que corresponde el value. Está hecho para que cuando se
-  //pregunta por el valor de una variable que falta dentro de un
-  //{{#nombre}}{{valor}}{{/nombre}} se agregue dentro del map o list
-  //que le corresponde
+  // La idea es que cuando te manden una lista de keys, se agregue en
+  // el lugar que corresponde el value. Está hecho para que cuando se
+  // pregunta por el valor de una variable que falta dentro de un
+  // {{#nombre}}{{valor}}{{/nombre}} se agregue dentro del map o list
+  // de nombre
   void operator []=(keys, value) {
     var memVar = '';
     List keysList;

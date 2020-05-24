@@ -16,10 +16,14 @@ import 'package:mustachex/mustachex.dart';
 main() {
   var template = '{{greeting_pascalCase}} {{what_pc}}!';
   var vars = {'greeting':'HELLO'};
-  fulfillmentFunction(String varName){
-    if(varName == 'what') return 'WORLD';
+  String fulfillmentFunction(MissingVariableException variable) {
+    if (variable.varName == 'what') {
+      return 'WORLD';
+    } else {
+      return 'UNIVERSE';
+    }
   }
-  var rendered = processMustachex(template,vars, missingVarFulfiller: fulfillmentFunction);
+  var rendered = processMustachex(template, vars, missingVarFulfiller: fulfillmentFunction);
   assert(rendered == 'Hello World!');
 }
 ```

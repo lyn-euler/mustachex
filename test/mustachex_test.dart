@@ -4,34 +4,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('Mustache extended', () {
-    var classesJSON = {
-      'classes': [
-        {
-          'name': 'claseUno',
-          'fields': [
-            {'name': 'field1', 'type': 'String'},
-            {'name': 'Field2', 'type': 'int'},
-          ]
-        },
-        {
-          'name': 'clase_dos',
-          'fields': [
-            {'name': 'field1', 'type': 'int'},
-          ],
-          'methods': [
-            {
-              'name': 'METHOD_UNO',
-              'returntype': 'String',
-              'parameters': [
-                {'name': 'param1', 'type': 'String'},
-                {'name': 'param2', 'type': 'double'}
-              ]
-            }
-          ]
-        }
-      ]
-    };
-    var vars = VariablesResolver(classesJSON);
     test('in a nutshell example', () async {
       var template = '{{greeting_pascalCase}} {{world_pc}}!';
       var vars = {'greeting': 'HELLO'};
@@ -65,6 +37,59 @@ void main() {
       procesado = await processor.process(template);
       expect(procesado, isNot(contains('-uno')));
       expect(procesado, isNot(contains('-dos')));
+    });
+    test('renderiza clases', () async {
+      var classesJSON = {
+        'classes': [
+          {
+            'name': 'claseUno',
+            'fields': [
+              {'name': 'field1', 'type': 'String', 'final': true},
+              {'name': 'Field2', 'type': 'int'},
+            ]
+          },
+          {
+            'name': 'clase_dos',
+            'fields': [
+              {'name': 'field1', 'type': 'int'},
+            ],
+            'methods': [
+              {
+                'name': 'METHOD_UNO',
+                'returntype': 'String',
+                'parameters': [
+                  {'name': 'param1', 'type': 'String'},
+                  {'name': 'param2', 'type': 'double'}
+                ]
+              },
+              {'name': 'METHOD_dos', 'returntype': 'String'}
+            ]
+          }
+        ]
+      };
+      var vars = VariablesResolver(classesJSON);
+      var processor = MustachexProcessor(variablesResolver: vars);
+      var template = '''
+      {{#classes}}
+      class {{name_pc}} {
+        {{#fields}}
+        {{#hasDocs}}///{{docs}}{{/hasDocs}}
+        {{#final}}final {{/final}}{{type_pc}} {{name_cc}};
+        {{/fields}}
+
+        {{name_pc}}();
+
+        {{#methods}}
+        {{returnType_pc}} {{name_cc}}{{#hasParameters}}({{#parameters}}{{type}} {{name}},{{/parameters}}){{/hasParameters}}{}
+        {{/methods}}
+      }
+      {{/classes}}
+      ''';
+      var procesado = await processor.process(template);
+      expect(procesado, contains('class ClaseUno'));
+      expect(procesado, contains('final String field1;'));
+      expect(procesado, contains('int field2;'));
+      expect(procesado, contains(RegExp('ClaseUno();.*}.*class ClaseDos')));
     });
   });
 }

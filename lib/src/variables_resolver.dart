@@ -81,10 +81,7 @@ class VariablesResolver {
         ret = ret[request[i]];
         //Si hay una lista, throwear (cómo se cuáles elementos agarrar?)
         if (ret is List && i < (request as List).length - 1) {
-          throw ArgumentError("You are requesting '${request.join('.')}' "
-              "in variablesResolver but '${request[i]}' is a List and "
-              "shouldn't be returned unless the request had been "
-              "'${(request as List).sublist(0, i + 1).join('.')}'");
+          throw VarFromListRequestException(request, i);
         }
       }
     }
@@ -181,6 +178,19 @@ class VariablesResolver {
       this[key] = value;
     });
   }
+}
+
+class VarFromListRequestException implements Exception {
+  final List request;
+  final int index;
+
+  VarFromListRequestException(this.request, this.index);
+
+  @override
+  String toString() => "You are requesting '${request.join('.')}' "
+      "in variablesResolver but '${request[i]}' is a List and "
+      "shouldn't be returned unless the request had been "
+      "'${request.sublist(0, index + 1).join('.')}'";
 }
 
 class UnconvertibleException implements Exception {

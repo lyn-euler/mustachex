@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:mustache/mustache.dart';
 import 'package:mustache_recase/mustache_recase.dart' as mustache_recase;
 import 'package:mustachex/src/variable_recase_decomposer.dart';
+import 'package:mustachex/src/variables_resolver.dart';
 import 'package:recase/recase.dart';
 
 import '../mustachex.dart';
@@ -110,12 +111,22 @@ class MustachexProcessor {
           //     "There is a missing value for '${ex.humanReadableVariable}' mustache "
           //     'variable. Trying to solve this...');
           //Primero nos fijamos si falta el valor o sólo hay que recasearlo
-          dynamic recasingAttempt =
-              variablesResolver.get(ex.parentCollectionsWithVarName);
-          if (recasingAttempt != null) {
+          dynamic preExistentVar;
+          VarFromListRequestException listException;
+          try {
+            preExistentVar =
+                variablesResolver.get(ex.parentCollectionsWithVarName);
+          } on VarFromListRequestException catch (exception) {
+            listException = exception;
+          }
+          if (preExistentVar != null) {
             // guardamos el valor recaseado
-            variablesResolver[ex.parentCollectionsWithRequest] =
-                variablesResolver.get(ex.parentCollectionsWithRequest);
+            if (listException == null) {
+              variablesResolver[ex.parentCollectionsWithRequest] =
+                  variablesResolver.get(ex.parentCollectionsWithRequest);
+            } else {
+              //TODO: seguir aca
+            }
             // print("Problem solved by recasing it to '$recasingAttempt'");
           } else {
             if (missingVarFulfiller == null) throw ex;

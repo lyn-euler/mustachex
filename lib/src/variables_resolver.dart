@@ -3,7 +3,7 @@ import 'package:recase/recase.dart';
 
 /// Will hold a bunch of variables and provide tools for obtaining them
 class VariablesResolver {
-  Map<String, dynamic> _mem = {};
+  final Map<String, dynamic> _mem = {};
   // Function missingResolver;
 
   final Map<String, String> recasingsShorthands = const {

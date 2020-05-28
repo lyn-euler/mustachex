@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:mustache/mustache.dart';
 import 'package:mustache_recase/mustache_recase.dart' as mustache_recase;
@@ -85,7 +86,7 @@ class MustachexProcessor {
               var mapToReplace =
                   iterations.first.variablesResolverPosition.first;
               var assign =
-                  _recursivelyProcessed(iterations, variable, recasedName);
+                  _recursivelyProcessHasX(iterations, variable, recasedName);
               variablesResolver[mapToReplace] = assign;
               // print('Problem solved by setting all intances of '
               //     "the last submap with a '$variable' field saying wether "
@@ -96,7 +97,8 @@ class MustachexProcessor {
               request.add(recasedName);
               storeLocation.add(variable);
               var storedVar = variablesResolver.get(request);
-              variablesResolver[storeLocation] = _processStoreValue(storedVar);
+              variablesResolver[storeLocation] =
+                  _processHasXStoringValue(storedVar);
               // print('Problem solved by defining '
               //     "'$variable' to ${variablesResolver[storeLocation]}");
             }
@@ -112,21 +114,36 @@ class MustachexProcessor {
           //     'variable. Trying to solve this...');
           //Primero nos fijamos si falta el valor o sólo hay que recasearlo
           dynamic preExistentVar;
-          VarFromListRequestException listException;
           try {
             preExistentVar =
                 variablesResolver.get(ex.parentCollectionsWithVarName);
-          } on VarFromListRequestException catch (exception) {
-            listException = exception;
+          } on VarFromListRequestException catch (listException) {
+            // //recasea cada item (si está) y vuelve a guardar con el cambio
+            // List parent = variablesResolver[listException.parentCollections];
+            // parent.forEach((items) {
+            //   var variable = items[ex.varName];
+            //   if (variable is StringVariable) {
+            //     items[ex.request] = variable[ex.recasing];
+            //   } else {
+            //     throw UnsupportedError(
+            //         'You are trying to recase a ${variable.runtimeType} type.\n'
+            //         '"${ex.parentCollectionsWithRequest.join('.')}" should be a String instead.');
+            //   }
+            // });
+            // variablesResolver[listException.parentCollections] = parent;
+            // return _tryRender();
+            //recasea cada item (si está) y vuelve a guardar con el cambio
+            var iterations =
+                _getMustacheIterations(ex, listException.request.last);
+            var mapToReplace = iterations.first.variablesResolverPosition.first;
+            variablesResolver[mapToReplace] =
+                _recursivelyProcessRecasing(iterations, ex);
+            return _tryRender();
           }
           if (preExistentVar != null) {
             // guardamos el valor recaseado
-            if (listException == null) {
-              variablesResolver[ex.parentCollectionsWithRequest] =
-                  variablesResolver.get(ex.parentCollectionsWithRequest);
-            } else {
-              //TODO: seguir aca
-            }
+            variablesResolver[ex.parentCollectionsWithRequest] =
+                variablesResolver.get(ex.parentCollectionsWithRequest);
             // print("Problem solved by recasing it to '$recasingAttempt'");
           } else {
             if (missingVarFulfiller == null) throw ex;
@@ -145,8 +162,9 @@ class MustachexProcessor {
     return _tryRender();
   }
 
+  /// procesa las _MustacheIterations que encuentra según la exepción
   List<_MustacheIteration> _getMustacheIterations(
-      MissingSectionTagException e, String recasedName) {
+      _MustacheMissingException e, String recasedName) {
     var iterations = <_MustacheIteration>[];
     var request = <String>[];
     var elements = List.from(e.parentCollections);
@@ -156,7 +174,7 @@ class MustachexProcessor {
       request.add(collection);
       try {
         resolvedVar = variablesResolver[request];
-      } on ArgumentError {
+      } on VarFromListRequestException {
         try {
           resolvedVar = iterations.last.iteration
               .firstWhere((elem) => elem.containsKey(collection))[collection];
@@ -198,6 +216,10 @@ class MissingVariableException extends _MustacheMissingException {
   MissingVariableException(TemplateException e, Map sourceVariables)
       : super(
             e.message.substring(36, e.message.length - 1), e, sourceVariables);
+
+  @override
+  String toString() => 'Should process {{${_d.request}}} but lacks both '
+      'the value for "${_d.varName}" and the function to fulfill missing values.';
 }
 
 /// Indicates that the `request` value wasn't providedvariables
@@ -211,6 +233,15 @@ class MissingSectionTagException extends _MustacheMissingException {
   MissingSectionTagException(TemplateException e, Map sourceVariables)
       : super(
             e.message.substring(35, e.message.length - 1), e, sourceVariables);
+
+  @override
+  String toString() {
+    var ret = 'Missing section tag "{{#$request}}"';
+    if (parentCollections.isEmpty) {
+      ret += ', from $humanReadableVariable';
+    }
+    return ret;
+  }
 }
 
 /// The parent class that does the computations
@@ -379,7 +410,7 @@ void _throwImpossibleState() {
 }
 
 /// Determines wether the hasStoredValue is true or false
-bool _processStoreValue(storedVar) {
+bool _processHasXStoringValue(storedVar) {
   if (storedVar == null) {
     return false;
   } else if (storedVar is bool) {
@@ -400,7 +431,7 @@ bool _processStoreValue(storedVar) {
 /// Devuelve un map sacado de la primera iteración con todos sus elementos
 /// procesados para devolver sus últimas instancias con el `hasName` correctamente
 /// seteado según el estado de su item `name`
-List<Map> _recursivelyProcessed(
+List<Map> _recursivelyProcessHasX(
     List<_MustacheIteration> iterations, String hasName, String name,
     [Map submap]) {
   var mapIdentifier = iterations.first.variablesResolverPosition.last;
@@ -410,7 +441,7 @@ List<Map> _recursivelyProcessed(
     for (var i = 0; i < ret.length; i++) {
       var processedName = iterations[1].variablesResolverPosition.last;
       var a =
-          _recursivelyProcessed(iterations.sublist(1), hasName, name, ret[i]);
+          _recursivelyProcessHasX(iterations.sublist(1), hasName, name, ret[i]);
       ret[i][processedName] = a;
     }
     return ret;
@@ -420,12 +451,99 @@ List<Map> _recursivelyProcessed(
         submap == null ? iterations.single.iteration : submap[mapIdentifier]);
     for (var map in iteration) {
       var retMap = Map<String, dynamic>.from(map);
-      retMap[hasName] = _processStoreValue(map[name]);
+      retMap[hasName] = _processHasXStoringValue(map[name]);
       ret.add(retMap);
     }
     return ret;
   }
 }
+
+class MissingNestedVariable {
+  final MissingVariableException e;
+
+  MissingNestedVariable(this.e);
+
+  @override
+  String toString() =>
+      "Can't recase ${e.parentCollectionsWithRequest.join('->')} because there is no '${e.varName}' value to recase. Maybe a typo?";
+}
+
+/// Las iterations son los valores de los primeros List<Map> del varsResolver
+/// el exeption es la data del recasing que falta hacer
+/// Esta función devuelve el map más primigenio de las iterations con
+/// los valores del recasing faltantes agregados en donde corresponde
+/// (en los maps del menos primigenio)
+List<Map> _recursivelyProcessRecasing(
+    List<_MustacheIteration> iterations, MissingVariableException e,
+    [Map submap]) {
+  List<Map> _recursiveRecaseAssignment(List<Map> mapas, List<String> keys) {
+    if (keys.isEmpty) {
+      for (var map in mapas) {
+        //se guarda el recasing
+        try {
+          map[e.request] = map[e.varName][e.recasing];
+        } on NoSuchMethodError {
+          //trató de recasear algo q dio null, debe faltar
+          throw MissingNestedVariable(e);
+        }
+      }
+      return mapas;
+      // } else if (keys.length == 1) {
+      //   for (var map in mapas) {
+      //     //se guarda el recasing
+      //     map[keys.single][e.request] = map[keys.single][e.varName][e.recasing];
+      //   }
+      //   return mapas;
+    } else {
+      for (var map in mapas) {
+        if (map[keys.first] != null) {
+          map[keys.first] = _recursiveRecaseAssignment(
+              List<Map>.from(map[keys.first]), keys.sublist(1));
+        }
+      }
+      return mapas;
+    }
+  }
+
+  // los iterations tienen [{},{},{},...]
+  var ret = <Map>[];
+  var parentCollectionsKeys = e.parentCollections.sublist(1);
+  ret.addAll(_recursiveRecaseAssignment(
+      iterations.first.iteration, parentCollectionsKeys));
+  return ret;
+
+  /// Devuelve un map sacado de la primera iteración con todos sus elementos
+  /// procesados para devolver sus últimas instancias con un field `request`
+  /// con el recaseo apropiado de `varName`
+  // var mapIdentifier = iterations.first.variablesResolverPosition.last;
+  // if (iterations.length > 1) {
+  //   //ir al caso base
+  //   var ret = List<Map>.from(
+  //       submap == null ? iterations.first.iteration : submap[mapIdentifier]);
+  //   for (var i = 0; i < ret.length; i++) {
+  //     var processedName = iterations[1].variablesResolverPosition.last;
+  //     var a = _recursivelyProcessRecasing(iterations.sublist(1), e, ret[i]);
+  //     ret[i][processedName] = a;
+  //   }
+  //   return ret;
+  // } else {
+  //   var ret = <Map<String, dynamic>>[];
+  //   var iteration = List.from(
+  //       submap == null ? iterations.single.iteration : submap[mapIdentifier]);
+  //   for (var map in iteration) {
+  //     var retMap = Map<String, dynamic>.from(map);
+  //     var variable = map[d.varName];
+  //     if (variable != null) {
+  //       retMap[d.request] = variable[d.recasing];
+  //     } else
+  //       debugger();
+  //     ret.add(retMap);
+  //   }
+  //   return ret;
+  // }
+}
+
+typedef ValueProcessFunc = dynamic Function(dynamic);
 
 /// The mustache iterations are formed with a list of maps: e.g.:
 /// {{#list}} {{mapItem}} {{#mapList}} {{element}} {{/mapList}} {{/list}}
@@ -446,13 +564,13 @@ class _MustacheIteration {
 
   /// Saves `value` in every element of iteration in the `key` position
   /// and returns the result of doing so
-  List<Map> setAll(String key, dynamic value) {
-    var ret = [];
+  List<Map> setAll(
+      String assignmentKey, String valueKey, ValueProcessFunc func) {
+    var ret = <Map>[];
     for (var e in iteration) {
-      e[key] = value;
+      e[assignmentKey] = func(e[valueKey]);
       ret.add(e);
     }
-    iteration = ret.cast<Map>();
     return ret;
   }
 }

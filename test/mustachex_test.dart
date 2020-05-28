@@ -46,7 +46,8 @@ void main() {
             'fields': [
               {'name': 'field1', 'type': 'String', 'final': true},
               {'name': 'Field2', 'type': 'int'},
-            ]
+            ],
+            'methods': []
           },
           {
             'name': 'clase_dos',
@@ -56,13 +57,13 @@ void main() {
             'methods': [
               {
                 'name': 'METHOD_UNO',
-                'returntype': 'String',
+                'returnType': 'String',
                 'parameters': [
                   {'name': 'param1', 'type': 'String'},
                   {'name': 'param2', 'type': 'double'}
                 ]
               },
-              {'name': 'METHOD_dos', 'returntype': 'String'}
+              {'name': 'method-dos', 'returnType': 'String'}
             ]
           }
         ]
@@ -74,13 +75,13 @@ void main() {
       class {{name_pc}} {
         {{#fields}}
         {{#hasDocs}}///{{docs}}{{/hasDocs}}
-        {{#final}}final {{/final}}{{type_pc}} {{name_cc}};
+        {{#hasFinal}}final {{/hasFinal}}{{type}} {{name_cc}};
         {{/fields}}
 
         {{name_pc}}();
 
         {{#methods}}
-        {{returnType_pc}} {{name_cc}}{{#hasParameters}}({{#parameters}}{{type}} {{name}},{{/parameters}}){{/hasParameters}}{}
+        {{returnType_pc}} {{name_cc}}({{#hasParameters}}{{#parameters}}{{type}} {{name}},{{/parameters}}{{/hasParameters}}){}
         {{/methods}}
       }
       {{/classes}}
@@ -89,7 +90,10 @@ void main() {
       expect(procesado, contains('class ClaseUno'));
       expect(procesado, contains('final String field1;'));
       expect(procesado, contains('int field2;'));
-      expect(procesado, contains(RegExp('ClaseUno();.*}.*class ClaseDos')));
+      expect(procesado, contains('String methodDos()'));
+      //puts nothing as methods
+      expect(
+          procesado, contains(RegExp(r'ClaseUno\(\);\s*}\s*class ClaseDos')));
     });
   });
 }

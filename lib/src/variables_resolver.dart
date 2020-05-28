@@ -183,12 +183,14 @@ class VariablesResolver {
 class VarFromListRequestException implements Exception {
   final List request;
   final int index;
+  final List parentCollections;
 
-  VarFromListRequestException(this.request, this.index);
+  VarFromListRequestException(this.request, this.index)
+      : parentCollections = request.sublist(0, index + 1);
 
   @override
   String toString() => "You are requesting '${request.join('.')}' "
-      "in variablesResolver but '${request[i]}' is a List and "
+      "in variablesResolver but '${request[index]}' is a List and "
       "shouldn't be returned unless the request had been "
       "'${request.sublist(0, index + 1).join('.')}'";
 }
@@ -234,7 +236,7 @@ class StringVariable {
 
   /// Used to recase via `VariableResolver["varName"]["xxxCase"]`
   String operator [](key) {
-    if (key == 'camelCase') {
+    if (key == 'cc') {
       return camelCase;
     } else if (key == 'camelCase') {
       return camelCase;
@@ -248,16 +250,20 @@ class StringVariable {
       return paramCase;
     } else if (key == 'pascalCase') {
       return pascalCase;
+    } else if (key == 'pc') {
+      return pascalCase;
     } else if (key == 'pathCase') {
       return pathCase;
     } else if (key == 'sentenceCase') {
       return sentenceCase;
     } else if (key == 'snakeCase') {
       return snakeCase;
+    } else if (key == 'sc') {
+      return snakeCase;
     } else if (key == 'titleCase') {
       return titleCase;
     } else {
-      throw UnsupportedError("'$key' is not supported");
+      throw UnsupportedError("'$key' recasing is not supported");
     }
   }
 

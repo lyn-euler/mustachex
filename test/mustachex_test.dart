@@ -30,12 +30,18 @@ void main() {
       };
       String partialsFunc(MissingPartialException e) => partials[e.partialName];
 
-      var processor = MustachexProcessor(
+      var workingProcessor = MustachexProcessor(
           partialsResolver: partialsFunc, initialVariables: {'foo': 'f00'});
+      var processorWithoutPartialsResolver =
+          MustachexProcessor(initialVariables: {'foo': 'f00'});
       var template = '{{>foo}}\n{{> bar}}';
-      var processed = await processor.process(template);
+      var processed = await workingProcessor.process(template);
+      expect(processorWithoutPartialsResolver.process(template),
+          throwsA(isA<MissingPartialsResolverFunction>()));
       expect(processed, contains('hola f00'));
       expect(processed, contains('hello f00'));
+      expect(workingProcessor.process('{{>nonExistentPartial}}'),
+          throwsA(isA<MissingPartialException>()));
     });
     test('guarda de has', () async {
       var vars = {

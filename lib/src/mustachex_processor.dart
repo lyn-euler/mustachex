@@ -48,8 +48,11 @@ class MustachexProcessor {
     if (partialsResolver == null) {
       throw MissingPartialsResolverFunction();
     }
-    return Template(
-        partialsResolver(MissingPartialException(partialName: name)));
+    //procesa el source del template o throwea si falta el partial
+    var e = MissingPartialException(partialName: name);
+    String templateSource = partialsResolver(e);
+    if (templateSource is! String) throw e;
+    return Template(templateSource, partialResolver: _partialsResolverAdapted);
   }
 
   Map<String, dynamic> _mustacheVars(String source) {

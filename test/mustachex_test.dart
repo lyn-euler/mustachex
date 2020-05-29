@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:mustachex/mustachex.dart';
 import 'package:mustachex/src/variables_resolver.dart';
 import 'package:test/test.dart';
@@ -20,6 +22,20 @@ void main() {
       expect(await processor.process(template), equals('Hello World!'));
       expect(await processor.process('{{greeting_pc}} {{xxx_pc}}!'),
           equals('Hello Universe!'));
+    });
+    test('funcion de partials', () async {
+      var partials = <String, String>{
+        'foo': '''Foo: hola {{foo}}''',
+        'bar': '''hello {{foo}}'''
+      };
+      String partialsFunc(MissingPartialException e) => partials[e.partialName];
+
+      var processor = MustachexProcessor(
+          partialsResolver: partialsFunc, initialVariables: {'foo': 'f00'});
+      var template = '{{>foo}}\n{{> bar}}';
+      var processed = await processor.process(template);
+      expect(processed, contains('hola f00'));
+      expect(processed, contains('hello f00'));
     });
     test('guarda de has', () async {
       var vars = {

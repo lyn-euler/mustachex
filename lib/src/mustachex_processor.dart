@@ -53,6 +53,54 @@ class MustachexProcessor {
         partialsResolver(MissingPartialException(partialName: name)));
   }
 
+  Map<String, dynamic> _mustacheVars(String source) {
+    var template = Template(source, partialResolver: _partialsResolverAdapted);
+    return _gatherTemplateRequiredVars(template);
+  }
+
+  Map<String, dynamic> _gatherTemplateRequiredVars(Template template,
+      [Map<String, dynamic> variables]) {
+    var vars = variables ?? <String, dynamic>{};
+    var nameRegExp = RegExp(r': (.*).$');
+    while (true) {
+      var error = _failing_gathering(template, vars);
+      // , printMessage: true, printReturn: true);
+      if (error == null) {
+        return vars;
+      } else if (error.message.startsWith('Partial not found')) {
+        throw MissingPartialException(templateException: error);
+      } else {
+        var e = error.message;
+        var name = nameRegExp.firstMatch(e).group(1);
+        if (e.contains('for variable tag')) {
+          vars[name] = '%ValueOf$name%';
+        } else {
+          //up to this version, if not a variable, only a Section is possible
+          var inSectionSrc = RegExp('{{([#^])$name}}([\\s\\S]*?){{/$name}}');
+          List<Match> matches = inSectionSrc.allMatches(error.source).toList();
+          for (var i = 0; i < matches.length; i++) {
+            var type = matches[i].group(1);
+            var contents = matches[i].group(2);
+            var sectionSourceTemplate =
+                Template(contents, partialResolver: _partialsResolverAdapted);
+            // if (e.contains("for inverse section")) {
+            // } else if (e.contains("for section")) {
+            if (type == '^') {
+              //inverse section
+              vars['^$name'] ??= {};
+              vars['^$name']
+                  .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
+            } else {
+              vars[name] ??= {};
+              vars[name]
+                  .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
+            }
+          }
+        }
+      }
+    }
+  }
+
   /// Processes a mustache formatted source with the given variables and throws
   /// [_MustacheMissingException] whenever any of them is missing
   Future<String> _processMustacheThrowingIfAbsent(
@@ -362,53 +410,6 @@ class _MustacheMissingException {
   //     return null;
   //   }
   // }
-}
-
-Map<String, dynamic> _mustacheVars(String source) {
-  var template = Template(source);
-  return _gatherTemplateRequiredVars(template);
-}
-
-Map<String, dynamic> _gatherTemplateRequiredVars(Template template,
-    [Map<String, dynamic> variables]) {
-  var vars = variables ?? <String, dynamic>{};
-  var nameRegExp = RegExp(r': (.*).$');
-  while (true) {
-    var error = _failing_gathering(template, vars);
-    // , printMessage: true, printReturn: true);
-    if (error == null) {
-      return vars;
-    } else if (error.message.startsWith('Partial not found')) {
-      throw MissingPartialException(templateException: error);
-    } else {
-      var e = error.message;
-      var name = nameRegExp.firstMatch(e).group(1);
-      if (e.contains('for variable tag')) {
-        vars[name] = '%ValueOf$name%';
-      } else {
-        //up to this version, if not a variable, only a Section is possible
-        var inSectionSrc = RegExp('{{([#^])$name}}([\\s\\S]*?){{/$name}}');
-        List<Match> matches = inSectionSrc.allMatches(error.source).toList();
-        for (var i = 0; i < matches.length; i++) {
-          var type = matches[i].group(1);
-          var contents = matches[i].group(2);
-          var sectionSourceTemplate = Template(contents);
-          // if (e.contains("for inverse section")) {
-          // } else if (e.contains("for section")) {
-          if (type == '^') {
-            //inverse section
-            vars['^$name'] ??= {};
-            vars['^$name']
-                .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
-          } else {
-            vars[name] ??= {};
-            vars[name]
-                .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
-          }
-        }
-      }
-    }
-  }
 }
 
 TemplateException _failing_gathering(Template template, Map vars,

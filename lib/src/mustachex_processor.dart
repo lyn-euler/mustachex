@@ -133,11 +133,11 @@ class MustachexProcessor {
             // variablesResolver[listException.parentCollections] = parent;
             // return _tryRender();
             //recasea cada item (si está) y vuelve a guardar con el cambio
-            var iterations =
-                _getMustacheIterations(ex, listException.request.last);
-            var mapToReplace = iterations.first.variablesResolverPosition.first;
+            var iteration =
+                _getPrimigenicMustacheIteration(ex, listException.request.last);
+            var mapToReplace = iteration.variablesResolverPosition.first;
             variablesResolver[mapToReplace] =
-                _recursivelyProcessRecasing(iterations, ex);
+                _recursivelyProcessRecasing(iteration, ex);
             return _tryRender();
           }
           if (preExistentVar != null) {
@@ -160,6 +160,20 @@ class MustachexProcessor {
     }
 
     return _tryRender();
+  }
+
+  _MustacheIteration _getPrimigenicMustacheIteration(
+      _MustacheMissingException e, String recasedName) {
+    var collection = e.parentCollections.first;
+    var resolvedVar = variablesResolver[collection];
+    return _MustacheIteration(resolvedVar.cast<Map>(), [collection]);
+    // if (resolvedVar is List) {
+    //   if (resolvedVar.every((e) => e is Map)) {
+    //     return _MustacheIteration(resolvedVar.cast<Map>(), [collection]);
+    //   } else {
+    //     _throwImpossibleState();
+    //   }
+    // }
   }
 
   /// procesa las _MustacheIterations que encuentra según la exepción
@@ -474,7 +488,7 @@ class MissingNestedVariable {
 /// los valores del recasing faltantes agregados en donde corresponde
 /// (en los maps del menos primigenio)
 List<Map> _recursivelyProcessRecasing(
-    List<_MustacheIteration> iterations, MissingVariableException e,
+    _MustacheIteration iteration, MissingVariableException e,
     [Map submap]) {
   List<Map> _recursiveRecaseAssignment(List<Map> mapas, List<String> keys) {
     if (keys.isEmpty) {
@@ -508,8 +522,8 @@ List<Map> _recursivelyProcessRecasing(
   // los iterations tienen [{},{},{},...]
   var ret = <Map>[];
   var parentCollectionsKeys = e.parentCollections.sublist(1);
-  ret.addAll(_recursiveRecaseAssignment(
-      iterations.first.iteration, parentCollectionsKeys));
+  ret.addAll(
+      _recursiveRecaseAssignment(iteration.iteration, parentCollectionsKeys));
   return ret;
 
   /// Devuelve un map sacado de la primera iteración con todos sus elementos

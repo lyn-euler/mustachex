@@ -9,7 +9,7 @@ environment:
 dependencies:
   path: ^1.6.0
   recase: ^3.0.0
-  mustache: ">=1.0.0 <2.0.0"
+  mustache_template: ">=1.0.0 <2.0.0"
   mustache_recase: "^2.0.2"
 
 dev_dependencies:

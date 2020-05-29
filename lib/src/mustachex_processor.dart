@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:developer';
 
-import 'package:mustache/mustache.dart';
+import 'package:mustache_template/mustache.dart';
 import 'package:mustache_recase/mustache_recase.dart' as mustache_recase;
 import 'package:mustachex/src/variable_recase_decomposer.dart';
 import 'package:mustachex/src/variables_resolver.dart';

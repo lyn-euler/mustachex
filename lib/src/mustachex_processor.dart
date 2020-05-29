@@ -49,7 +49,8 @@ class MustachexProcessor {
     if (partialsResolver == null) {
       throw MissingPartialsResolverFunction();
     }
-    return Template(partialsResolver(MissingPartialException(name)));
+    return Template(
+        partialsResolver(MissingPartialException(partialName: name)));
   }
 
   /// Processes a mustache formatted source with the given variables and throws
@@ -212,8 +213,12 @@ class MustachexProcessor {
 }
 
 class MissingPartialException implements Exception {
-  final String partialName;
-  MissingPartialException(this.partialName);
+  String partialName;
+  final TemplateException templateException;
+  MissingPartialException({this.templateException, this.partialName}) {
+    partialName ??= templateException.message
+        .substring(19, templateException.message.length - 1);
+  }
 
   @override
   String toString() => "Missing partial: Partial '$partialName' not found";
@@ -373,6 +378,8 @@ Map<String, dynamic> _gatherTemplateRequiredVars(Template template,
     // , printMessage: true, printReturn: true);
     if (error == null) {
       return vars;
+    } else if (error.message.startsWith('Partial not found')) {
+      throw MissingPartialException(templateException: error);
     } else {
       var e = error.message;
       var name = nameRegExp.firstMatch(e).group(1);

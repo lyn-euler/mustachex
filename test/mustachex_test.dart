@@ -1,5 +1,4 @@
-import 'dart:developer';
-
+import 'package:mustache_template/mustache.dart';
 import 'package:mustachex/mustachex.dart';
 import 'package:mustachex/src/variables_resolver.dart';
 import 'package:test/test.dart';
@@ -7,8 +6,10 @@ import 'package:test/test.dart';
 void main() {
   group('Mustache extended', () {
     test('in a nutshell example', () async {
-      var template = '{{greeting_pascalCase}} {{world_pc}}!';
-      var vars = {'greeting': 'HELLO'};
+      var template = "{{#hasFoo}} this won't be rendered{{/hasFoo}}"
+          '{{greeting_pascalCase}} {{world_pc}}!'
+          '{{#hasBar}} This neither {{/hasBar}}';
+      var vars = {'greeting': 'HELLO', 'foo': false};
       String fulfillmentFunction(MissingVariableException variable) {
         if (variable.varName == 'world') {
           return 'WORLD';
@@ -22,6 +23,15 @@ void main() {
       expect(await processor.process(template), equals('Hello World!'));
       expect(await processor.process('{{greeting_pc}} {{xxx_pc}}!'),
           equals('Hello Universe!'));
+    });
+    test('hasFoo guard behaviour', () async {
+      var template = "{{#hasFoo}} this won't be rendered {{/hasFoo}}"
+          '{{#hasBar}} this neither {{/hasBar}}'
+          '{{^hasBaz}} nor this {{/hasBaz}}';
+      var vars = {'foo': false, 'baz': true};
+
+      var processor = MustachexProcessor(initialVariables: vars);
+      expect(await processor.process(template), isEmpty);
     });
     test('funcion de partials', () async {
       var partials = <String, String>{
@@ -67,7 +77,7 @@ void main() {
             'name': 'claseUno',
             'fields': [
               {'name': 'field1', 'type': 'String', 'final': true},
-              {'name': 'Field2', 'type': 'int'},
+              {'name': 'Field2', 'type': 'int', 'docs': 'tieneDocs'},
             ],
             'methods': []
           },
@@ -110,12 +120,50 @@ void main() {
       ''';
       var procesado = await processor.process(template);
       expect(procesado, contains('class ClaseUno'));
+      expect(procesado, contains('///tieneDocs'));
       expect(procesado, contains('final String field1;'));
       expect(procesado, contains('int field2;'));
       expect(procesado, contains('String methodDos()'));
+      expect(procesado, contains('String param1,double param2'));
       //puts nothing as methods
       expect(
           procesado, contains(RegExp(r'ClaseUno\(\);\s*}\s*class ClaseDos')));
+    });
+    test("Missing variable has good exception", () async {
+      var vars = {
+        'parent1': [
+          {
+            'parent2': [
+              {'var': 'sorpi'}
+            ]
+          },
+          {'parent2': []},
+        ]
+      };
+      var p = MustachexProcessor(variablesResolver: VariablesResolver(vars));
+      var src = '{{#parent1}}{{#parent2}}'
+          '{{var_paramCase}}'
+          '{{/parent2}}{{/parent1}}';
+      // var t = Template(src);
+      // t.renderString(vars);
+      expect(() => p.process(src), throwsA(MissingVariableException));
+      MissingVariableException exception;
+      try {
+        await p.process(src);
+      } catch (e) {
+        exception = e;
+      }
+      expect(exception, isNotNull);
+      expect(exception.humanReadableVariable,
+          equals("['parent1'],['parent2'],['var']"));
+      expect(exception.parentCollectionsWithRequest,
+          equals(['parent1', 'parent2', 'var_paramCase']));
+      expect(exception.parentCollectionsWithVarName,
+          equals(['parent1', 'parent2', 'var']));
+      expect(exception.recasing, equals('paramCase'));
+      expect(exception.request, equals('var_paramCase'));
+      expect(exception.varName, equals('var'));
+      expect(exception.parentCollections, equals(['parent1', 'parent2']));
     });
   });
 }

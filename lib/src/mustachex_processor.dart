@@ -5,6 +5,7 @@ import 'package:mustache_recase/mustache_recase.dart' as mustache_recase;
 import 'package:mustachex/src/variable_recase_decomposer.dart';
 import 'package:mustachex/src/variables_resolver.dart';
 import 'package:recase/recase.dart';
+import 'package:quiver/collection.dart';
 
 import '../mustachex.dart';
 
@@ -111,7 +112,9 @@ class MustachexProcessor {
     if (_sourceCache[source] == null) {
       _sourceCache[source] = {
         'template': Template(source,
-            partialResolver: partialsResolver, htmlEscapeValues: false),
+            lenient: false,
+            partialResolver: partialsResolver,
+            htmlEscapeValues: false),
         'variables': _mustacheVars(source)
       };
     }
@@ -132,6 +135,7 @@ class MustachexProcessor {
           var variable = ex.request;
           if (variable.startsWith('has')) {
             var recasedName = ReCase(variable.substring(3)).camelCase;
+            //TODO: debugear desde acá
             var iterations = _getMustacheIterations(ex, recasedName);
             if (iterations.isNotEmpty) {
               var mapToReplace =
@@ -187,9 +191,13 @@ class MustachexProcessor {
             var iteration =
                 _getPrimigenicMustacheIteration(ex, listException.request.last);
             var mapToReplace = iteration.variablesResolverPosition.first;
-            variablesResolver[mapToReplace] =
-                _recursivelyProcessRecasing(iteration, ex);
-            return _tryRender();
+            var replacement = _recursivelyProcessRecasing(iteration, ex);
+            if (listsEqual(variablesResolver[mapToReplace], replacement)) {
+              throw ex;
+            } else {
+              variablesResolver[mapToReplace] = replacement;
+              return _tryRender();
+            }
           }
           if (preExistentVar != null) {
             // guardamos el valor recaseado
@@ -248,9 +256,11 @@ class MustachexProcessor {
         }
       }
       if (resolvedVar is List) {
-        if (resolvedVar.isEmpty) {
-          break;
-        } else if (resolvedVar.every((e) => e is Map)) {
+        //No se para q estaba esto, pero no servía para
+        // if (resolvedVar.isEmpty) {
+        //   break;
+        // } else
+        if (resolvedVar.every((e) => e is Map)) {
           iterations.add(
               _MustacheIteration(resolvedVar.cast<Map>(), List.from(request)));
         } else {

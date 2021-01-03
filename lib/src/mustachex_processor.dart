@@ -88,16 +88,16 @@ class MustachexProcessor {
                 Template(contents, partialResolver: _partialsResolverAdapted);
             // if (e.contains("for inverse section")) {
             // } else if (e.contains("for section")) {
-            if (type == '^') {
-              //inverse section
-              vars['^$name'] ??= {};
-              vars['^$name']
-                  .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
-            } else {
-              vars[name] ??= {};
-              vars[name]
-                  .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
-            }
+            // if (type == '^') {
+            //   //inverse section
+            //   vars['^$name'] ??= {};
+            //   vars['^$name']
+            //       .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
+            // } else {
+            vars[name] ??= {};
+            vars[name]
+                .addAll(_gatherTemplateRequiredVars(sectionSourceTemplate));
+            // }
           }
         }
       }
@@ -129,8 +129,40 @@ class MustachexProcessor {
         // print(
         //     "There is a missing value for '${ex.humanReadableVariable}' mustache "
         //     'section tag. Trying to solve this...');
-        if (e.message.contains('section tag')) {
+        if (e.message.contains('inverse section')) {
           //Primero nos fijamos si es una guarda tipo hasXxxYyyyyyZzzz
+          var ex = MissingInverseSectionTagException(e, variables);
+          var variable = ex.request;
+          if (variable.startsWith('has')) {
+            var recasedName = ReCase(variable.substring(3)).camelCase;
+            //TODO: debugear desde acá
+            var iterations = _getMustacheIterations(ex, recasedName);
+            if (iterations.isNotEmpty) {
+              var mapToReplace =
+                  iterations.first.variablesResolverPosition.first;
+              var assign =
+                  _recursivelyProcessHasX(iterations, variable, recasedName);
+              variablesResolver[mapToReplace] = assign;
+              // print('Problem solved by setting all intances of '
+              //     "the last submap with a '$variable' field saying wether "
+              //     "the field '$recasedName' is set or not.");
+            } else {
+              var request = ex.parentCollections;
+              var storeLocation = List.from(request);
+              request.add(recasedName);
+              storeLocation.add(variable);
+              var storedVar = variablesResolver.get(request);
+              variablesResolver[storeLocation] =
+                  _processHasXStoringValue(storedVar);
+              // print('Problem solved by defining '
+              //     "'$variable' to ${variablesResolver[storeLocation]}");
+            }
+            return _tryRender();
+          } else {
+            //No es del tipo hasXxxYyy. Le falta la lista directamente
+            throw ex;
+          }
+        } else if (e.message.contains('section tag')) {
           var ex = MissingSectionTagException(e, variables);
           var variable = ex.request;
           if (variable.startsWith('has')) {
@@ -301,8 +333,7 @@ class MissingVariableException extends _MustacheMissingException {
       'the value for "${_d.varName}" and the function to fulfill missing values.';
 }
 
-/// Indicates that the `request` value wasn't providedvariables
-/// Note that `request` is automatically decomposed from `varName`(_`recasing`)?
+/// Indicates that the `request` value wasn't provided
 class MissingSectionTagException extends _MustacheMissingException {
   @override
   VariableRecaseDecomposer _d;
@@ -316,6 +347,27 @@ class MissingSectionTagException extends _MustacheMissingException {
   @override
   String toString() {
     var ret = 'Missing section tag "{{#$request}}"';
+    if (parentCollections.isEmpty) {
+      ret += ', from $humanReadableVariable';
+    }
+    return ret;
+  }
+}
+
+/// Indicates that the `request` value wasn't provided in a {{^foo}} tag
+class MissingInverseSectionTagException extends _MustacheMissingException {
+  @override
+  VariableRecaseDecomposer _d;
+  @override
+  List<String> _parentCollections;
+
+  MissingInverseSectionTagException(TemplateException e, Map sourceVariables)
+      : super(
+            e.message.substring(39, e.message.length - 1), e, sourceVariables);
+
+  @override
+  String toString() {
+    var ret = 'Missing inverse section tag "{{^$request}}"';
     if (parentCollections.isEmpty) {
       ret += ', from $humanReadableVariable';
     }

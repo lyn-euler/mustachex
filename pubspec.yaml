@@ -1,6 +1,6 @@
 name: mustachex
 description: Mustache Extended
-version: 0.0.1
+version: 0.0.1+1
 repository: https://gitlab.com/Rodsevich/mustachex
 # homepage: https://www.example.com
 environment:

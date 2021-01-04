@@ -1,6 +1,6 @@
 # MUSTACHE EXtended for Dart
 
-The features of mustache with the addition of:
+The features of [mustache](https://pub.dev/packages/mustache_template) with the addition of:
 
 - recasing variables
 - missing variables fulfillment function
@@ -104,13 +104,13 @@ var json = {'foo': valueOfFoo}
 ```
 
 | valueOfFoo | hasFoo value | rendered mustache |
-| --- | ------ | --- |
-| `null` | false | hasFoo was false |
-| `false` | false | hasFoo was false |
-| `[]` | false | hasFoo was false |
-| `{}` | false | hasFoo was false |
-| `''` | false | hasFoo was false |
-| `'a'` | true | hasFoo was true |
-| `{'a':1}` | true | hasFoo was true |
-| `['a']` | true | hasFoo was true |
-| `true` | true | hasFoo was true |
+| ---------- | ------------ | ----------------- |
+| `null`     | false        | hasFoo was false  |
+| `false`    | false        | hasFoo was false  |
+| `[]`       | false        | hasFoo was false  |
+| `{}`       | false        | hasFoo was false  |
+| `''`       | false        | hasFoo was false  |
+| `'a'`      | true         | hasFoo was true   |
+| `{'a':1}`  | true         | hasFoo was true   |
+| `['a']`    | true         | hasFoo was true   |
+| `true`     | true         | hasFoo was true   |

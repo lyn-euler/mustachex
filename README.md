@@ -87,3 +87,30 @@ variable.parentCollectionsWithRequest; // ['parent1', 'parent2', 'var_paramCase'
 ```
 
 ### hasFoo guard
+
+The mustache's sections that begins with _has_ will automatically include a variable with the same name that will contain **true** or **false** depending on the context in which it was computed.
+
+Supposing a mustache code of:
+
+```mustache
+{{#hasFoo}}hasFoo was true{{/hasFoo}}
+{{^hasFoo}}hasFoo was false{{/hasFoo}}
+```
+
+And the following JSON:
+
+```dart
+var json = {'foo': valueOfFoo}
+```
+
+| valueOfFoo | hasFoo value | rendered mustache |
+| --- | ------ | --- |
+| `null` | false | hasFoo was false |
+| `false` | false | hasFoo was false |
+| `[]` | false | hasFoo was false |
+| `{}` | false | hasFoo was false |
+| `''` | false | hasFoo was false |
+| `'a'` | true | hasFoo was true |
+| `{'a':1}` | true | hasFoo was true |
+| `['a']` | true | hasFoo was true |
+| `true` | true | hasFoo was true |

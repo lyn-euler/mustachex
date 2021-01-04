@@ -1,6 +1,7 @@
 name: mustachex
 description: Mustache Extended
 version: 0.0.1
+repository: https://gitlab.com/Rodsevich/mustachex
 # homepage: https://www.example.com
 environment:
   sdk: ">=2.7.0 <3.0.0"

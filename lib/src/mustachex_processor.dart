@@ -129,71 +129,48 @@ class MustachexProcessor {
         // print(
         //     "There is a missing value for '${ex.humanReadableVariable}' mustache "
         //     'section tag. Trying to solve this...');
+        Future<String> handleMissingSection(
+            String variable, _MustacheMissingException ex) {
+          if (variable.startsWith('has')) {
+            var recasedName = ReCase(variable.substring(3)).camelCase;
+            //TODO: debugear desde acá
+            var iterations = _getMustacheIterations(ex, recasedName);
+            if (iterations.isNotEmpty) {
+              var mapToReplace =
+                  iterations.first.variablesResolverPosition.first;
+              var assign =
+                  _recursivelyProcessHasX(iterations, variable, recasedName);
+              variablesResolver[mapToReplace] = assign;
+              // print('Problem solved by setting all intances of '
+              //     "the last submap with a '$variable' field saying wether "
+              //     "the field '$recasedName' is set or not.");
+            } else {
+              var request = ex.parentCollections;
+              var storeLocation = List.from(request);
+              request.add(recasedName);
+              storeLocation.add(variable);
+              var storedVar = variablesResolver.get(request);
+              variablesResolver[storeLocation] =
+                  _processHasXStoringValue(storedVar);
+              // print('Problem solved by defining '
+              //     "'$variable' to ${variablesResolver[storeLocation]}");
+            }
+            return _tryRender();
+          } else {
+            //No es del tipo hasXxxYyy. Le falta la lista directamente
+            throw ex;
+          }
+        }
+
         if (e.message.contains('inverse section')) {
           //Primero nos fijamos si es una guarda tipo hasXxxYyyyyyZzzz
           var ex = MissingInverseSectionTagException(e, variables);
           var variable = ex.request;
-          if (variable.startsWith('has')) {
-            var recasedName = ReCase(variable.substring(3)).camelCase;
-            //TODO: debugear desde acá
-            var iterations = _getMustacheIterations(ex, recasedName);
-            if (iterations.isNotEmpty) {
-              var mapToReplace =
-                  iterations.first.variablesResolverPosition.first;
-              var assign =
-                  _recursivelyProcessHasX(iterations, variable, recasedName);
-              variablesResolver[mapToReplace] = assign;
-              // print('Problem solved by setting all intances of '
-              //     "the last submap with a '$variable' field saying wether "
-              //     "the field '$recasedName' is set or not.");
-            } else {
-              var request = ex.parentCollections;
-              var storeLocation = List.from(request);
-              request.add(recasedName);
-              storeLocation.add(variable);
-              var storedVar = variablesResolver.get(request);
-              variablesResolver[storeLocation] =
-                  _processHasXStoringValue(storedVar);
-              // print('Problem solved by defining '
-              //     "'$variable' to ${variablesResolver[storeLocation]}");
-            }
-            return _tryRender();
-          } else {
-            //No es del tipo hasXxxYyy. Le falta la lista directamente
-            throw ex;
-          }
+          return handleMissingSection(variable, ex);
         } else if (e.message.contains('section tag')) {
           var ex = MissingSectionTagException(e, variables);
           var variable = ex.request;
-          if (variable.startsWith('has')) {
-            var recasedName = ReCase(variable.substring(3)).camelCase;
-            //TODO: debugear desde acá
-            var iterations = _getMustacheIterations(ex, recasedName);
-            if (iterations.isNotEmpty) {
-              var mapToReplace =
-                  iterations.first.variablesResolverPosition.first;
-              var assign =
-                  _recursivelyProcessHasX(iterations, variable, recasedName);
-              variablesResolver[mapToReplace] = assign;
-              // print('Problem solved by setting all intances of '
-              //     "the last submap with a '$variable' field saying wether "
-              //     "the field '$recasedName' is set or not.");
-            } else {
-              var request = ex.parentCollections;
-              var storeLocation = List.from(request);
-              request.add(recasedName);
-              storeLocation.add(variable);
-              var storedVar = variablesResolver.get(request);
-              variablesResolver[storeLocation] =
-                  _processHasXStoringValue(storedVar);
-              // print('Problem solved by defining '
-              //     "'$variable' to ${variablesResolver[storeLocation]}");
-            }
-            return _tryRender();
-          } else {
-            //No es del tipo hasXxxYyy. Le falta la lista directamente
-            throw ex;
-          }
+          return handleMissingSection(variable, ex);
         } else if (e.message.contains('variable tag')) {
           var ex = MissingVariableException(e, variables);
           // print(
